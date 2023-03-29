@@ -80,8 +80,8 @@ async function main () {
                     const parsedResponse = JSON.parse(response.replace('data: ', ''))
                     answer += parsedResponse.chunk
                 }
-                const attachments = []
                 if (answer.match(imageRegex)) {
+                    const attachments = []
                     const images = answer.match(imageRegex)
                     for (let i = 0; i < images.length; i++) {
                         console.log(images[i])

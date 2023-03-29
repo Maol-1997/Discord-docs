@@ -81,7 +81,6 @@ async function main () {
                     answer += parsedResponse.chunk
                 }
                 const attachments = []
-                // if it includes an image, send it as an attachment
                 if (answer.match(imageRegex)) {
                     const images = answer.match(imageRegex)
                     for (let i = 0; i < images.length; i++) {
@@ -92,7 +91,6 @@ async function main () {
                         const attachment = new AttachmentBuilder(buffer, { name: 'result' + i + '.' + imageType })
                         attachments.push(attachment)
                     }
-                    // remover las lineas que contienen las imagenes
                     answer = answer.split('\n').filter((line) => !line.match(imageRegex)).join('\n')
                     await interaction.editReply({ content: answer, files: attachments })
                     return

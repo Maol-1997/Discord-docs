@@ -64,14 +64,27 @@ async function main () {
         }).then(response => response.json()).then((info) => {
             const conversationId = info.conversation_id
             console.log({ conversationId })
+            const body = {
+                question,
+                history: [
+                    {
+                        prompt: '',
+                        response: '',
+                        sources: []
+                    }
+                ],
+                company: 'codegpt',
+                conversation_id: conversationId
+            }
             fetch('https://aijsplayground-production.up.railway.app/qaChat', {
                 headers: {
                     accept: 'text/event-stream, text/event-stream',
                     'content-type': 'application/json'
                 },
-                body: '{"question":"' + question.toString() + '","history":[{"prompt":"","response":"","sources":[]}],"company":"codegpt","conversation_id":' + conversationId + '}',
+                body: JSON.stringify(body),
                 method: 'POST'
             }).then(response => response.text()).then(async (response) => {
+                console.log({ response })
                 const splittedResponse = response.trim().split('\n\n')
                 splittedResponse.shift()
                 splittedResponse.pop()

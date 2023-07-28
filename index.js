@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import { AttachmentBuilder, ChannelType, Client, GatewayIntentBits, Partials, REST, Routes } from 'discord.js'
+import {AttachmentBuilder, ChannelType, Client, GatewayIntentBits, Partials, REST, Routes} from 'discord.js'
 import fetch from 'node-fetch'
 
 const MAX_RESPONSE_CHUNK_LENGTH = 1500
@@ -20,19 +20,19 @@ const commands = [
     }
 ]
 
-async function initDiscordCommands () {
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN)
+async function initDiscordCommands() {
+    const rest = new REST({version: '10'}).setToken(process.env.DISCORD_BOT_TOKEN)
 
     try {
         console.log('Started refreshing application (/) commands.')
-        await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), { body: commands })
+        await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {body: commands})
         console.log('Successfully reloaded application (/) commands.')
     } catch (error) {
         console.error(error)
     }
 }
 
-async function main () {
+async function main() {
     await initDiscordCommands()
 
     const client = new Client({
@@ -52,9 +52,9 @@ async function main () {
         console.log(new Date())
     })
 
-    function askQuestion ({ question, interaction = null }, cb) {
+    function askQuestion({question, interaction = null}, cb) {
         const imageRegex = /https?:\/\/.*\.(?:png|jpg|jpeg|gif)/i
-        fetch('https://aijsplayground-production.up.railway.app/newConversation', {
+        fetch("https://api.mendable.ai/newConversation", {
             headers: {
                 accept: '*/*',
                 'content-type': 'application/json'
@@ -63,20 +63,15 @@ async function main () {
             method: 'POST'
         }).then(response => response.json()).then((info) => {
             const conversationId = info.conversation_id
-            console.log({ conversationId })
+            console.log({conversationId})
             const body = {
                 question,
-                history: [
-                    {
-                        prompt: '',
-                        response: '',
-                        sources: []
-                    }
-                ],
-                company: 'codegpt',
-                conversation_id: conversationId
+                history: [],
+                component_version: "0.0.113-beta.4",
+                conversation_id: conversationId,
+                anon_key: "70685355-6375-445c-a41d-f227c81916e8"
             }
-            fetch('https://aijsplayground-production.up.railway.app/qaChat', {
+            fetch("https://api.mendable.ai/component/chat", {
                 headers: {
                     accept: 'text/event-stream, text/event-stream',
                     'content-type': 'application/json'
@@ -84,8 +79,9 @@ async function main () {
                 body: JSON.stringify(body),
                 method: 'POST'
             }).then(response => response.text()).then(async (response) => {
-                console.log({ response })
+                console.log({response})
                 const splittedResponse = response.trim().split('\n\n')
+                splittedResponse.shift()
                 splittedResponse.shift()
                 splittedResponse.pop()
                 let answer = ''
@@ -101,14 +97,14 @@ async function main () {
                         const data = await fetch(images[i]).then(response => response.arrayBuffer())
                         const buffer = Buffer.from(data, 'base64')
                         const imageType = images[i].split('.').pop()
-                        const attachment = new AttachmentBuilder(buffer, { name: 'result' + i + '.' + imageType })
+                        const attachment = new AttachmentBuilder(buffer, {name: 'result' + i + '.' + imageType})
                         attachments.push(attachment)
                     }
                     answer = answer.split('\n').filter((line) => !line.match(imageRegex)).join('\n')
-                    await interaction.editReply({ content: answer, files: attachments })
+                    await interaction.editReply({content: answer, files: attachments})
                     return
                 }
-                console.log({ answer })
+                console.log({answer})
                 cb(answer)
             }).catch((error) => {
                 console.error(error)
@@ -122,7 +118,7 @@ async function main () {
         })
     }
 
-    async function splitAndSendResponse (resp, user) {
+    async function splitAndSendResponse(resp, user) {
         while (resp.length > 0) {
             const end = Math.min(MAX_RESPONSE_CHUNK_LENGTH, resp.length)
             await user.send(resp.slice(0, end))
@@ -145,7 +141,7 @@ async function main () {
 
         try {
             const sentMessage = await message.reply('Hmm, let me think...')
-            askQuestion({ question: message.content }, async (response) => {
+            askQuestion({question: message.content}, async (response) => {
                 if (response.length >= MAX_RESPONSE_CHUNK_LENGTH) {
                     await splitAndSendResponse(response, user)
                 } else {
@@ -157,16 +153,16 @@ async function main () {
         }
     })
 
-    async function handleInteractionAsk (interaction) {
+    async function handleInteractionAsk(interaction) {
         const question = interaction.options.getString('question')
         try {
-            await interaction.reply({ content: 'Hmm, let me think...' })
-            askQuestion({ question, interaction }, async (content) => {
+            await interaction.reply({content: 'Hmm, let me think...'})
+            askQuestion({question, interaction}, async (content) => {
                 if (content.length >= MAX_RESPONSE_CHUNK_LENGTH) {
-                    await interaction.editReply({ content: 'The response is too long, I will send it to you in a DM' })
+                    await interaction.editReply({content: 'The response is too long, I will send it to you in a DM'})
                     await splitAndSendResponse(content, interaction.user)
                 } else {
-                    await interaction.editReply({ content })
+                    await interaction.editReply({content})
                 }
             })
         } catch (e) {
